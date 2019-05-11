@@ -4,32 +4,38 @@ require 'pry'
 class Scraper
 
   def self.scrape_index_page(index_url)
-    students_hash = []
-    html = Nokogiri::HTML(open(index_url))
-    html.css(".student-card").collect do |student|
-      hash = {
-        name: student.css("h4.student-name").text,
-        location: student.css("p.student-location").text,
-        profile_url: "http://students.learn.co/" + student.css("a").attribute("href")
-      }
-      students_hash << hash
+    index_html = open(index_url)
+    index_doc = Nokogiri::HTML(index_html)
+    student_cards = index_doc.css(".student-card")
+    students = []
+    student_cards.collect do |student_card_xml|
+      students << {
+        :name => student_card_xml.css("h4.student-name").text,
+        :location => student_card_xml.css("p.student-location").text,
+        :profile_url => "./fixtures/student-site/" + student_card_xml.css("a").attribute("href").value
+        }
     end
-    students_hash
+    students
   end
 
   def self.scrape_profile_page(profile_url)
-    students_hash = {}
-
-     html = Nokogiri::HTML(open(profile_url))
-    html.css("div.social-icon-controler a").each do |student|
-        url = student.attribute("href")
-        students_hash[:twitter_url] = url if url.include?("twitter")
-        students_hash[:linkedin_url] = url if url.include?("linkedin")
-        students_hash[:github_url] = url if url.include?("github")
-        students_hash[:blog_url] = url if student.css("img").attribute("src").text.include?("rss")
+    profile_html = open(profile_url)
+    profile_doc = Nokogiri::HTML(profile_html)
+    attributes = {}
+    profile_doc.css("div.social-icon-container a").each do |link_xml|
+      case link_xml.attribute("href").value
+      when /twitter/
+        attributes[:twitter] = link_xml.attribute("href").value
+      when /github/
+        attributes[:github] = link_xml.attribute("href").value
+      when /linkedin/
+        attributes[:linkedin] = link_xml.attribute("href").value
+      else
+          attributes[:blog] = link_xml.attribute("href").value
+      end
     end
-        students_hash[:profile_quote] = html.css("div.profile-quote").text
-        students_hash[:bio] = html.css("div.bio-content p").text
-    students_hash
+    attributes[:profile_quote] = profile_doc.css("div.profile-quote").text
+    attributes[:bio] = profile_doc.css("div.bio-content div.description-holder").text.strip
+    attributes
   end
 end
