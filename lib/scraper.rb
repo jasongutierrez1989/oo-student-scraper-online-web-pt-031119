@@ -9,7 +9,7 @@ class Scraper
     student_cards = index_doc.css(".student-card")
     students = {}
     student_cards.collect do |student_card_xml|
-      students << {
+      students < {
         :name => student_card_xml.css("h4.student-name").text,
         :location => student_card_xml.css("p.student-location").text,
         :profile_url => "./fixtures/student-site/" + student_card_xml.css("a").attribute("href").value
